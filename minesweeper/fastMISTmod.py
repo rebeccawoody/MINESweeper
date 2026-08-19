@@ -42,7 +42,7 @@ class GenMIST(object):
         # turn on age weighting
         self.ageweight = kwargs.get('ageweight',True)
         
-        self.labels = kwargs.get('labels',['EEP','initial_Mass','initial_[Fe/H]','initial_[a/Fe]'])
+        self.labels = kwargs.get('labels',['EEP','initial_Mass','initial_[Fe/H]','initial_[a/Fe]','amlt'])
         # list of output parametrs you want from MIST 
         # in addition to EEP, init_mass, init_FeH
         self.predictions = kwargs.get('predictions',
@@ -67,17 +67,14 @@ class GenMIST(object):
         self.lib_as_grid()
 
         searchrad = 2.0
-        self.dist = np.sqrt( 
-            (searchrad**2.0) + 
-            (searchrad**2.0) + 
-            (searchrad**2.0) + 
-            (searchrad**2.0))
+        # generic over the number of interpolation axes (self.ndim = len(self.labels))
+        self.dist = searchrad * np.sqrt(self.ndim)
 
     def make_lib(self, misth5):
         """Convert the HDF5 input to ndarrays for labels and outputs.
         """
         # cols = self.labels
-        cols = ['EEP','initial_mass','initial_[Fe/H]','initial_[a/Fe]']
+        cols = ['EEP','initial_mass','initial_[Fe/H]','initial_[a/Fe]','amlt']
         self.libparams = np.concatenate([np.array(misth5[z])[cols] for z in misth5["index"]])
         self.libparams.dtype.names = tuple(self.labels)
 
@@ -89,6 +86,7 @@ class GenMIST(object):
         self.libparams['initial_Mass']   = np.around(self.libparams['initial_Mass'],decimals=2)
         self.libparams['initial_[Fe/H]'] = np.around(self.libparams['initial_[Fe/H]'],decimals=2)
         self.libparams['initial_[a/Fe]'] = np.around(self.libparams['initial_[a/Fe]'],decimals=2)
+        self.libparams['amlt']           = np.around(self.libparams['amlt'],decimals=2)
 
         # if self.ageweight:
         #     if self.verbose:
@@ -97,13 +95,13 @@ class GenMIST(object):
 
         self.output = self.output.T
 
-    def getMIST(self, mass=1.0, eep=300, feh=0.0, afe=0.0, **kwargs):
+    def getMIST(self, mass=1.0, eep=300, feh=0.0, afe=0.0, amlt=2.0, **kwargs):
         """
         """
         try:
-            inds, wghts = self.weights(mass=mass, eep=eep, feh=feh, afe=afe)
+            inds, wghts = self.weights(mass=mass, eep=eep, feh=feh, afe=afe, amlt=amlt)
             predpars = np.dot(wghts, self.output[inds, :])
-            return [eep,mass,feh,afe]+list(predpars)
+            return [eep,mass,feh,afe,amlt]+list(predpars)
         except(ValueError):
             return None
 

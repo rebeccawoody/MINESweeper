@@ -131,6 +131,7 @@ class prior(object):
           self.defaultpars['initial_Mass'] = [0.25,30.0]
           self.defaultpars['initial_[Fe/H]'] = [-4.0,0.5]
           self.defaultpars['initial_[a/Fe]'] = [-0.2,0.6]
+          self.defaultpars['amlt'] = [1.0,3.0]
           self.defaultpars['log(Age)'] = [9.0,10.2]
           self.defaultpars['Age'] = [1.0,14.0]
 
@@ -176,12 +177,12 @@ class prior(object):
      def priortrans_mist(self,upars):
           outdict = {}
 
-          for namepar in ['EEP','initial_Mass','initial_[Fe/H]','initial_[a/Fe]']:
+          for namepar in ['EEP','initial_Mass','initial_[Fe/H]','initial_[a/Fe]','amlt']:
                if namepar in upars.keys():
                     upars_i = upars[namepar]
                     if namepar in self.priordict['uniform'].keys():
                          par_i = (
-                              (max(self.priordict['uniform'][namepar])-min(self.priordict['uniform'][namepar]))*upars_i + 
+                              (max(self.priordict['uniform'][namepar])-min(self.priordict['uniform'][namepar]))*upars_i +
                               min(self.priordict['uniform'][namepar])
                               )
                     elif namepar in self.priordict['gaussian'].keys():

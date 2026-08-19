@@ -74,6 +74,7 @@ class likelihood(object):
                mass=inpars['initial_Mass'],
                feh= inpars['initial_[Fe/H]'],
                afe= inpars['initial_[a/Fe]'],
+               amlt=inpars['amlt'],
                verbose=False,
                )
           if MISTpred is None:

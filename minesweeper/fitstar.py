@@ -64,6 +64,7 @@ class FitMS(object):
                'initial_[Fe/H]',
                'initial_[a/Fe]',
                'initial_Mass',
+               'amlt',
                ])
           # build a dictionary with bool switches for parameters
           self.fitpars_bool = {pp:False for pp in self.fitpars}
@@ -193,7 +194,7 @@ class FitMS(object):
 
                for pp in ['Teff','log(g)','[Fe/H]','[a/Fe]','log(R)','log(A)']:
                     self.fitpars_bool[pp] = False
-               for pp in ['EEP','initial_[Fe/H]','initial_[a/Fe]','initial_Mass']:
+               for pp in ['EEP','initial_[Fe/H]','initial_[a/Fe]','initial_Mass','amlt']:
                     self.fitpars_bool[pp] = True
                     if self.phot_bool:
                          self.fitpars_bool['Dist'] = True
