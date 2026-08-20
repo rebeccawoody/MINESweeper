@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 import sys
 import numpy as np
-from datetime import datetime 
+from datetime import datetime
 
+import h5py
 import dynesty
 
 from .fitutils import airtovacuum
@@ -192,9 +193,18 @@ class FitMS(object):
                # get path for MIST models
                self.fitargs['MISTpath'] = inputdict.get('MISTpath',None)
 
+               # auto-detect the optional mixing-length axis: sample 'amlt' only
+               # if the grid file carries an 'amlt' column. Lets the same setup
+               # run the fiducial (4-D) grid and a variable-alpha (5-D) grid.
+               isopars = ['EEP','initial_[Fe/H]','initial_[a/Fe]','initial_Mass']
+               if self.fitargs['MISTpath'] is not None:
+                    with h5py.File(self.fitargs['MISTpath'],'r') as _mh5:
+                         if 'amlt' in _mh5[_mh5['index'][0]].dtype.names:
+                              isopars.append('amlt')
+
                for pp in ['Teff','log(g)','[Fe/H]','[a/Fe]','log(R)','log(A)']:
                     self.fitpars_bool[pp] = False
-               for pp in ['EEP','initial_[Fe/H]','initial_[a/Fe]','initial_Mass','amlt']:
+               for pp in isopars:
                     self.fitpars_bool[pp] = True
                     if self.phot_bool:
                          self.fitpars_bool['Dist'] = True

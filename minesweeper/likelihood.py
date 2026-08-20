@@ -69,14 +69,17 @@ class likelihood(object):
                'log_g':'log(g)',})
 
      def predMIST(self,inpars):
-          MISTpred = self.GMIST.getMIST(
+          mistkw = dict(
                eep= inpars['EEP'],
                mass=inpars['initial_Mass'],
                feh= inpars['initial_[Fe/H]'],
                afe= inpars['initial_[a/Fe]'],
-               amlt=inpars['amlt'],
                verbose=False,
                )
+          # only pass the mixing length if the loaded grid carries that axis
+          if 'amlt' in self.GMIST.labels:
+               mistkw['amlt'] = inpars['amlt']
+          MISTpred = self.GMIST.getMIST(**mistkw)
           if MISTpred is None:
                return None
 

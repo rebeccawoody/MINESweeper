@@ -42,8 +42,16 @@ class GenMIST(object):
         # turn on age weighting
         self.ageweight = kwargs.get('ageweight',True)
         
-        self.labels = kwargs.get('labels',['EEP','initial_Mass','initial_[Fe/H]','initial_[a/Fe]','amlt'])
-        # list of output parametrs you want from MIST 
+        # base isochrone axes; the optional mixing-length axis 'amlt' is added
+        # automatically iff the grid file carries an 'amlt' column, so the same
+        # code runs both fiducial (4-D) and variable-alpha (5-D) grids.
+        base_labels = ['EEP','initial_Mass','initial_[Fe/H]','initial_[a/Fe]']
+        with h5py.File(self.mistfile, "r") as _mh5:
+            _gridcols = _mh5[_mh5['index'][0]].dtype.names
+        if 'amlt' in _gridcols:
+            base_labels = base_labels + ['amlt']
+        self.labels = kwargs.get('labels',base_labels)
+        # list of output parametrs you want from MIST
         # in addition to EEP, init_mass, init_FeH
         self.predictions = kwargs.get('predictions',
             ['log(Age)','Mass','log(R)','log(L)',
@@ -73,8 +81,11 @@ class GenMIST(object):
     def make_lib(self, misth5):
         """Convert the HDF5 input to ndarrays for labels and outputs.
         """
-        # cols = self.labels
-        cols = ['EEP','initial_mass','initial_[Fe/H]','initial_[a/Fe]','amlt']
+        # derive the HDF5 column names from self.labels (only 'initial_Mass'
+        # differs in case from its column 'initial_mass'); keeps this generic
+        # over the optional 'amlt' axis.
+        label2col = {'initial_Mass':'initial_mass'}
+        cols = [label2col.get(l, l) for l in self.labels]
         self.libparams = np.concatenate([np.array(misth5[z])[cols] for z in misth5["index"]])
         self.libparams.dtype.names = tuple(self.labels)
 
@@ -83,10 +94,11 @@ class GenMIST(object):
                        for p in cols]
         self.output = np.array(self.output)
 
-        self.libparams['initial_Mass']   = np.around(self.libparams['initial_Mass'],decimals=2)
-        self.libparams['initial_[Fe/H]'] = np.around(self.libparams['initial_[Fe/H]'],decimals=2)
-        self.libparams['initial_[a/Fe]'] = np.around(self.libparams['initial_[a/Fe]'],decimals=2)
-        self.libparams['amlt']           = np.around(self.libparams['amlt'],decimals=2)
+        # round every grid axis except EEP (integer index) to 2 decimals so
+        # np.unique recovers the intended node values; generic over amlt.
+        for l in self.labels:
+            if l != 'EEP':
+                self.libparams[l] = np.around(self.libparams[l],decimals=2)
 
         # if self.ageweight:
         #     if self.verbose:
@@ -95,13 +107,18 @@ class GenMIST(object):
 
         self.output = self.output.T
 
-    def getMIST(self, mass=1.0, eep=300, feh=0.0, afe=0.0, amlt=2.0, **kwargs):
+    def getMIST(self, mass=1.0, eep=300, feh=0.0, afe=0.0, amlt=None, **kwargs):
         """
         """
         try:
-            inds, wghts = self.weights(mass=mass, eep=eep, feh=feh, afe=afe, amlt=amlt)
+            wkw = dict(mass=mass, eep=eep, feh=feh, afe=afe)
+            prefix = [eep,mass,feh,afe]
+            if 'amlt' in self.labels:
+                wkw['amlt'] = amlt
+                prefix = prefix + [amlt]
+            inds, wghts = self.weights(**wkw)
             predpars = np.dot(wghts, self.output[inds, :])
-            return [eep,mass,feh,afe,amlt]+list(predpars)
+            return prefix+list(predpars)
         except(ValueError):
             return None
 
